@@ -5,21 +5,7 @@
 
 %===========================================================================
 
-%load("./Secuencias/scan3d-fw-27Feb2014-094714.mat"); %Load video
-%load("./Secuencias/scan3d-fw-27Feb2014-094752.mat"); %Load video
-%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat"); %Load video
-
-%load("./Secuencias/scan3d-o-27Feb2014-093907.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-o-27Feb2014-093946.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-o-27Feb2014-094033.mat"); %Load video (este falla)
-
-%load("./Secuencias/scan3d-ri-27Feb2014-094457.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-ri-27Feb2014-094528.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-ri-27Feb2014-094558.mat"); %Load video (este falla)
-
-%load("./Secuencias/scan3d-up-27Feb2014-094145.mat"); %Load video
-%load("./Secuencias/scan3d-up-27Feb2014-094221.mat"); %Load video (este falla)
-load("./Secuencias/scan3d-up-27Feb2014-094258.mat"); %Load video
+load("./Secuencias/scan3d-bg-27Feb2014-094402.mat"); %Load background
 
 scanWithNans = single(scan3d.depth);
 
@@ -44,7 +30,21 @@ meanScene(isnan(meanScene)) = 0;  %Nans to 0
 save("background.mat", "meanScene", "desvScene", "meanSceneColor", "desvSceneColor");
 %______________________________
 
-load("./Secuencias/scan3d-up-27Feb2014-094145.mat"); %Load video
+%load("./Secuencias/scan3d-fw-27Feb2014-094714.mat"); %Load video
+%load("./Secuencias/scan3d-fw-27Feb2014-094752.mat"); %Load video
+%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat"); %Load video
+
+%load("./Secuencias/scan3d-o-27Feb2014-093907.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-o-27Feb2014-093946.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-o-27Feb2014-094033.mat"); %Load video (este falla)
+
+%load("./Secuencias/scan3d-ri-27Feb2014-094457.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-ri-27Feb2014-094528.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-ri-27Feb2014-094558.mat"); %Load video (este falla)
+
+%load("./Secuencias/scan3d-up-27Feb2014-094145.mat"); %Load video
+%load("./Secuencias/scan3d-up-27Feb2014-094221.mat"); %Load video (este falla)
+load("./Secuencias/scan3d-up-27Feb2014-094258.mat"); %Load video
 
 numFrames = size(scan3d.img,4);
 
@@ -115,8 +115,13 @@ for i=1 : size(RGBSegmented,4) %for each frame, numFrames
     bb2 = ceil(regions(idx(2)).BoundingBox); %should be the face
 
     % Mean depth of blobs
-    valuesReg1 = mean(mean(DSegmented(bb1(1):bb1(1)+bb1(3),bb1(2):bb1(2)+bb1(4),i), 2));
-    valuesReg2 = mean(mean(DSegmented(bb2(1):bb2(1)+bb2(3),bb2(2):bb2(2)+bb2(4),i), 2));
+    borderR = min(bb1(1)+bb1(3), size(DSegmented(1)));
+    borderB = min(bb1(2)+bb1(4), size(DSegmented(2)));
+    valuesReg1 = mean(mean(DSegmented(bb1(1):borderR,bb1(2):borderB,i), 2));
+
+    borderR = min(bb2(1)+bb2(3), size(DSegmented(1)));
+    borderB = min(bb2(2)+bb2(4), size(DSegmented(2)));
+    valuesReg2 = mean(mean(DSegmented(bb2(1):borderR,bb2(2):borderB,i), 2));
 
     % Avoid noise
     if reg(idx(2))<500
