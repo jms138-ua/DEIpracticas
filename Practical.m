@@ -5,7 +5,21 @@
 
 %===========================================================================
 
-load("./Secuencias/scan3d-bg-27Feb2014-094402.mat"); %Load background
+%load("./Secuencias/scan3d-fw-27Feb2014-094714.mat"); %Load video
+%load("./Secuencias/scan3d-fw-27Feb2014-094752.mat"); %Load video
+%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat"); %Load video
+
+%load("./Secuencias/scan3d-o-27Feb2014-093907.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-o-27Feb2014-093946.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-o-27Feb2014-094033.mat"); %Load video (este falla)
+
+%load("./Secuencias/scan3d-ri-27Feb2014-094457.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-ri-27Feb2014-094528.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-ri-27Feb2014-094558.mat"); %Load video (este falla)
+
+%load("./Secuencias/scan3d-up-27Feb2014-094145.mat"); %Load video
+%load("./Secuencias/scan3d-up-27Feb2014-094221.mat"); %Load video (este falla)
+load("./Secuencias/scan3d-up-27Feb2014-094258.mat"); %Load video
 
 scanWithNans = single(scan3d.depth);
 
