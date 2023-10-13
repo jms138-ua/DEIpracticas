@@ -30,21 +30,22 @@ meanScene(isnan(meanScene)) = 0;  %Nans to 0
 save("background.mat", "meanScene", "desvScene", "meanSceneColor", "desvSceneColor");
 %______________________________
 
-%load("./Secuencias/scan3d-fw-27Feb2014-094714.mat"); %Load video
-%load("./Secuencias/scan3d-fw-27Feb2014-094752.mat"); %Load video
-%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat"); %Load video
+% -Regulares
 
-%load("./Secuencias/scan3d-o-27Feb2014-093907.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-o-27Feb2014-093946.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-o-27Feb2014-094033.mat"); %Load video (este falla)
+%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat");
+%load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
 
-%load("./Secuencias/scan3d-ri-27Feb2014-094457.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-ri-27Feb2014-094528.mat"); %Load video (este falla)
-%load("./Secuencias/scan3d-ri-27Feb2014-094558.mat"); %Load video (este falla)
-
-%load("./Secuencias/scan3d-up-27Feb2014-094145.mat"); %Load video
-%load("./Secuencias/scan3d-up-27Feb2014-094221.mat"); %Load video (este falla)
-load("./Secuencias/scan3d-up-27Feb2014-094258.mat"); %Load video
+% -Buenos
+%load("./Secuencias/scan3d-fw-27Feb2014-094714.mat");
+%load("./Secuencias/scan3d-fw-27Feb2014-094752.mat");
+%load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
+%load("./Secuencias/scan3d-o-27Feb2014-093946.mat");
+%load("./Secuencias/scan3d-o-27Feb2014-094033.mat");
+%load("./Secuencias/scan3d-ri-27Feb2014-094457.mat");
+%load("./Secuencias/scan3d-ri-27Feb2014-094528.mat");
+%load("./Secuencias/scan3d-ri-27Feb2014-094558.mat");
+%load("./Secuencias/scan3d-up-27Feb2014-094145.mat");
+load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
 
 numFrames = size(scan3d.img,4);
 
@@ -62,9 +63,9 @@ meanSceneColor = single(meanSceneColor);
 % Create mask color
 
 maskAuxD = createMaskWithBS(depthWithNans, meanScene, desvScene, 8);
-maskAuxR = createMaskWithBS(RColor, meanSceneColor(:,:,1), desvSceneColor(:,:,1),2);
-maskAuxG = createMaskWithBS(GColor, meanSceneColor(:,:,2), desvSceneColor(:,:,2),1);
-maskAuxB = createMaskWithBS(BColor, meanSceneColor(:,:,3), desvSceneColor(:,:,3),1);
+maskAuxR = createMaskWithBS(RColor, meanSceneColor(:,:,1), desvSceneColor(:,:,1), 2);
+maskAuxG = createMaskWithBS(GColor, meanSceneColor(:,:,2), desvSceneColor(:,:,2), 1);
+maskAuxB = createMaskWithBS(BColor, meanSceneColor(:,:,3), desvSceneColor(:,:,3), 1);
 
 for i=1 : size(maskAuxR,3) %for each frame, numFrames
     maskColor(:,:,i) = maskAuxR(:,:,i) & maskAuxG(:,:,i) & maskAuxB(:,:,i);
@@ -111,17 +112,16 @@ for i=1 : size(RGBSegmented,4) %for each frame, numFrames
     [b,idx] = sort(reg, "descend");
 
     % Blobs
-    bb1 = ceil(regions(idx(1)).BoundingBox); %should be the hand
-    bb2 = ceil(regions(idx(2)).BoundingBox); %should be the face
+    bb1 = round(regions(idx(1)).BoundingBox); %should be the hand
+    bb2 = round(regions(idx(2)).BoundingBox); %should be the face
+
+    % Crop regions within image boundaries
+    bb1 = imcrop(DSegmented(:,:,i), bb1);
+    bb2 = imcrop(DSegmented(:,:,i), bb2);
 
     % Mean depth of blobs
-    borderR = min(bb1(1)+bb1(3), size(DSegmented(1)));
-    borderB = min(bb1(2)+bb1(4), size(DSegmented(2)));
-    valuesReg1 = mean(mean(DSegmented(bb1(1):borderR,bb1(2):borderB,i), 2));
-
-    borderR = min(bb2(1)+bb2(3), size(DSegmented(1)));
-    borderB = min(bb2(2)+bb2(4), size(DSegmented(2)));
-    valuesReg2 = mean(mean(DSegmented(bb2(1):borderR,bb2(2):borderB,i), 2));
+    valuesReg1 = mean(bb1(:));
+    valuesReg2 = mean(bb2(:));
 
     % Avoid noise
     if reg(idx(2))<500
@@ -141,9 +141,9 @@ end
 
 % Kalman filter
 kalmanFilter = trackingKF( ...
-    'StateTransitionModel', eye(2), ...
-    'MeasurementModel', eye(2), ...
-    'StateCovariance', eye(2) * 1000 ...
+    "StateTransitionModel", eye(2), ...
+    "MeasurementModel", eye(2), ...
+    "StateCovariance", eye(2) * 1000 ...
 );
 
 predicted = zeros(2, numFrames);
@@ -167,15 +167,11 @@ for i=1 : numFrames %for each frame
 
     %Centroid
     hold on
-    plot(Centroid(1,i), Centroid(2,i), "r.", "markersize", 50);
-    plot(predicted(1,i), predicted(2,i), "b.", "markersize", 50);
-    plot(location(1,i), location(2,i), "g.", "markersize", 50);
+    plot(location(1,i), location(2,i), "b.", "markersize", 50);
     hold off
     pause(0.1);
 end
 %Centroid history
 hold on
-plot(Centroid(1,:), Centroid(2,:), "r-");
-plot(predicted(1,:), predicted(2,:), "b-");
-plot(location(1,:), location(2,:), "g-");
+plot(location(1,:), location(2,:), "b-");
 hold off
