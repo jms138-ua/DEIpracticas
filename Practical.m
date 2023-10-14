@@ -1,11 +1,13 @@
 % DEI Practical assignment 2014/15
 % Objective: 3D HCI Gesture learning
 
-% scan3d.img = [width_pixel, height_pixel, RGB_color, frame]
-
 %===========================================================================
 
-load("./Secuencias/scan3d-bg-27Feb2014-094402.mat"); %Load background
+% LOAD DATA
+
+% scan3d.img = [width_pixel, height_pixel, RGB_color, frame]
+
+load("./Secuencias/scan3d-bg-27Feb2014-094402.mat");
 
 scanWithNans = single(scan3d.depth);
 
@@ -19,11 +21,13 @@ meanScene = median(scanWithNans,3);
 meanSceneColor(:,:,1) = median(RColor,3);
 meanSceneColor(:,:,2) = median(GColor,3);
 meanSceneColor(:,:,3) = median(BColor,3);
+meanSceneColor = single(meanSceneColor);
 
 desvScene = std(scanWithNans,0,3);
 desvSceneColor(:,:,1) = std(single(RColor),0,3);
 desvSceneColor(:,:,2) = std(single(GColor),0,3);
 desvSceneColor(:,:,3) = std(single(BColor),0,3);
+desvSceneColor = single(desvSceneColor);
 
 meanScene(isnan(meanScene)) = 0;  %Nans to 0
 
@@ -56,11 +60,11 @@ RColor(:,:,:) = scan3d.img(:,:,1,:);
 GColor(:,:,:) = scan3d.img(:,:,2,:);
 BColor(:,:,:) = scan3d.img(:,:,3,:);
 
-meanSceneColor = single(meanSceneColor);
-
 %===========================================================================
 
-% Create mask color
+% SEGMENTATION
+
+% Segmentacion del fondo y mascara RGBD
 
 maskAuxD = createMaskWithBS(depthWithNans, meanScene, desvScene, 8);
 maskAuxR = createMaskWithBS(RColor, meanSceneColor(:,:,1), desvSceneColor(:,:,1), 2);
@@ -71,9 +75,6 @@ for i=1 : size(maskAuxR,3) %for each frame, numFrames
     maskColor(:,:,i) = maskAuxR(:,:,i) & maskAuxG(:,:,i) & maskAuxB(:,:,i);
     maskColorDepth(:,:,i) = maskColor(:,:,i) & depthWithNans(:,:,i)<1600;
 end
-%______________________________
-
-% Segmentation
 
 RSegmented = RColor*NaN;
 GSegmented = GColor*NaN;
@@ -165,13 +166,11 @@ for i=1 : numFrames %for each frame
     imagesc(scan3d.img(:,:,:,i)); %Original
     imagesc(DSegmented(:,:,i)); %Segmented
 
-    %Centroid
     hold on
-    plot(location(1,i), location(2,i), "b.", "markersize", 50);
+    plot(location(1,i), location(2,i), "r.", "markersize", 50); %Centroid
     hold off
     pause(0.1);
 end
-%Centroid history
 hold on
-plot(location(1,:), location(2,:), "b-");
+plot(location(1,:), location(2,:), "r-"); %Centroid history
 hold off
