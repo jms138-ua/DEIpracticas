@@ -3,6 +3,10 @@
 
 %===========================================================================
 
+%=====================
+%| - ROI DETECTION - |
+%=====================
+
 % LOAD DATA
 
 % scan3d.img = [width_pixel, height_pixel, RGB_color, frame]
@@ -30,26 +34,20 @@ desvSceneColor(:,:,3) = std(single(BColor),0,3);
 desvSceneColor = single(desvSceneColor);
 
 meanScene(isnan(meanScene)) = 0;  %Nans to 0
-
-save("background.mat", "meanScene", "desvScene", "meanSceneColor", "desvSceneColor");
 %______________________________
 
-% -Regulares
-
-%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat");
-%load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
-
-% -Buenos
 %load("./Secuencias/scan3d-fw-27Feb2014-094714.mat");
 %load("./Secuencias/scan3d-fw-27Feb2014-094752.mat");
-%load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
+%load("./Secuencias/scan3d-fw-27Feb2014-094834.mat");
+load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
 %load("./Secuencias/scan3d-o-27Feb2014-093946.mat");
 %load("./Secuencias/scan3d-o-27Feb2014-094033.mat");
 %load("./Secuencias/scan3d-ri-27Feb2014-094457.mat");
 %load("./Secuencias/scan3d-ri-27Feb2014-094528.mat");
 %load("./Secuencias/scan3d-ri-27Feb2014-094558.mat");
 %load("./Secuencias/scan3d-up-27Feb2014-094145.mat");
-load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
+%load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
+%load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
 
 numFrames = size(scan3d.img,4);
 
@@ -64,14 +62,14 @@ BColor(:,:,:) = scan3d.img(:,:,3,:);
 
 % SEGMENTATION
 
-% Segmentacion del fondo y mascara RGBD
+% Background segmentation and RGBD mask
 
 maskAuxD = createMaskWithBS(depthWithNans, meanScene, desvScene, 8);
 maskAuxR = createMaskWithBS(RColor, meanSceneColor(:,:,1), desvSceneColor(:,:,1), 2);
 maskAuxG = createMaskWithBS(GColor, meanSceneColor(:,:,2), desvSceneColor(:,:,2), 1);
 maskAuxB = createMaskWithBS(BColor, meanSceneColor(:,:,3), desvSceneColor(:,:,3), 1);
 
-for i=1 : size(maskAuxR,3) %for each frame, numFrames
+for i=1 : numFrames
     maskColor(:,:,i) = maskAuxR(:,:,i) & maskAuxG(:,:,i) & maskAuxB(:,:,i);
     maskColorDepth(:,:,i) = maskColor(:,:,i) & depthWithNans(:,:,i)<1600;
 end
@@ -82,7 +80,7 @@ BSegmented = BColor*NaN;
 DSegmented = scan3d.depth*NaN;
 RGBSegmented = scan3d.img*0;
 
-for i=1 : size(maskAuxR,3) %for each frame, numFrames
+for i=1 : numFrames
     RSegmented(:,:,i) = segmentImageByColorMask(RColor, maskColorDepth, i);
     GSegmented(:,:,i) = segmentImageByColorMask(GColor, maskColorDepth, i);
     BSegmented(:,:,i) = segmentImageByColorMask(BColor, maskColorDepth, i);
@@ -96,7 +94,7 @@ end
 
 % Centroid
 
-for i=1 : size(RGBSegmented,4) %for each frame, numFrames
+for i=1 : numFrames
 
     % RGB to HSV
     HSVimage = rgb2hsv(RGBSegmented(:,:,:,i));
@@ -136,9 +134,12 @@ for i=1 : size(RGBSegmented,4) %for each frame, numFrames
         Centroid(:,i) = regions(idx(2)).Centroid;
     end
 end
-%______________________________
 
-%Tracking
+%===========================================================================
+
+%================
+%| - Tracking - |
+%================
 
 % Kalman filter
 kalmanFilter = trackingKF( ...
@@ -150,14 +151,44 @@ kalmanFilter = trackingKF( ...
 predicted = zeros(2, numFrames);
 location = zeros(2, numFrames);
 
-for i=1 : numFrames %for each frame, numFrames
+for i=1 : numFrames
     predicted(:,i) = predict(kalmanFilter);
 
     % Correct centroid
     measured = Centroid(:,i);
     location(:,i) = correct(kalmanFilter, measured);
 end
-%______________________________
+
+%===========================================================================
+
+%=====================
+%| - Clasification - |
+%=====================
+
+% SVM Model
+load("data.mat");
+SVMModel = fitcecoc( ...
+    double(data(:,1:2)), data(:,3), ...
+    "Learners","svm" ...
+);
+
+% Predict
+xmov = 0;
+ymov = 0;
+for i=2 : numFrames
+    xmov = xmov + abs(location(1,i) - location(1,i-1));
+    ymov = ymov + abs(location(2,i) - location(2,i-1));
+end
+mov = [xmov, ymov];
+
+label = predict(SVMModel, mov);
+
+save("model.mat", "SVMModel");
+
+%data = [data; [mov, "fw"]];
+%save("data.mat", "data");
+
+%===========================================================================
 
 % Display
 
@@ -173,4 +204,5 @@ for i=1 : numFrames %for each frame
 end
 hold on
 plot(location(1,:), location(2,:), "r-"); %Centroid history
+text(50,50, label, "Color", "red", "FontSize", 20, "FontWeight", "bold");
 hold off
