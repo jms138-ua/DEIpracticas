@@ -39,7 +39,7 @@ meanScene(isnan(meanScene)) = 0;  %Nans to 0
 %load("./Secuencias/scan3d-fw-27Feb2014-094714.mat");
 %load("./Secuencias/scan3d-fw-27Feb2014-094752.mat");
 %load("./Secuencias/scan3d-fw-27Feb2014-094834.mat");
-load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
+%load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
 %load("./Secuencias/scan3d-o-27Feb2014-093946.mat");
 %load("./Secuencias/scan3d-o-27Feb2014-094033.mat");
 %load("./Secuencias/scan3d-ri-27Feb2014-094457.mat");
@@ -47,7 +47,7 @@ load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
 %load("./Secuencias/scan3d-ri-27Feb2014-094558.mat");
 %load("./Secuencias/scan3d-up-27Feb2014-094145.mat");
 %load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
-%load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
+load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
 
 numFrames = size(scan3d.img,4);
 
@@ -94,6 +94,8 @@ end
 
 % Centroid
 
+bbs = [];
+
 for i=1 : numFrames
 
     % RGB to HSV
@@ -115,12 +117,12 @@ for i=1 : numFrames
     bb2 = round(regions(idx(2)).BoundingBox); %should be the face
 
     % Crop regions within image boundaries
-    bb1 = imcrop(DSegmented(:,:,i), bb1);
-    bb2 = imcrop(DSegmented(:,:,i), bb2);
+    bbc1 = imcrop(DSegmented(:,:,i), bb1);
+    bbc2 = imcrop(DSegmented(:,:,i), bb2);
 
     % Mean depth of blobs
-    valuesReg1 = mean(bb1(:));
-    valuesReg2 = mean(bb2(:));
+    valuesReg1 = mean(bbc1(:));
+    valuesReg2 = mean(bbc2(:));
 
     % Avoid noise
     if reg(idx(2))<500
@@ -130,10 +132,16 @@ for i=1 : numFrames
     % We want the closest Centroid
     if valuesReg1<valuesReg2
         Centroid(:,i) = regions(idx(1)).Centroid;
+        bbs = [bbs; bb1];
     else
         Centroid(:,i) = regions(idx(2)).Centroid;
+        bbs = [bbs; bb2];
     end
 end
+
+fid = fopen('scan3d-up-27Feb2014-094258.bb','w');
+fprintf(fid,'[%d,%d,%d,%d], ',bbs');
+fclose(fid);
 
 %===========================================================================
 
