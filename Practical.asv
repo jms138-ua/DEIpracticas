@@ -47,8 +47,8 @@ meanScene(isnan(meanScene)) = 0;  %Nans to 0
 %load("./Secuencias/scan3d-fw-27Feb2014-094834.mat");
 %load("./Secuencias/scan3d-fw-27Feb2014-094752.mat");
 %load("./Secuencias/scan3d-up-27Feb2014-094145.mat");
-load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
-%load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
+%load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
+load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
 
 numFrames = size(scan3d.img,4);
 
@@ -189,7 +189,6 @@ cvTrainError = kfoldLoss(model)
 
 
 % Predict
-% extract characteristics of test point
 xmov = 0;
 ymov = 0;
 for i=2 : numFrames
@@ -206,9 +205,7 @@ end
 if(loss(model.Trained{3},model.Trained{3}.X,model.Trained{3}.Y) < loss(bstModel,bstModel.X,bstModel.Y))
     bstModel = model.Trained{3};
 end
-%show error of the best model
 bstModelError = loss(bstModel,bstModel.X,bstModel.Y)
-
 %predict label
 label = predict(bstModel, mov);
 
