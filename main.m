@@ -176,16 +176,20 @@ data = readmatrix("data.csv", "OutputType", "string");
 
 % Support Vector Machines Model
 c = cvpartition(data(:,3), "KFold", 3);
-SVMModel = fitcknn( ...
+cvSVMModel = fitcecoc( ...
     double(data(:,1:2)), data(:,3), ...
-    "CVPartition", c ...
+    "CVPartition", c, "Learners", "svm"...
 );
 
-% Find the best model with Cross Validation
-L = kfoldLoss(SVMModel, "Mode", "individual");
-[minError, minIndex] = min(L);
-SVMModel = SVMModel.Trained{minIndex};
+% See model performance
+labels = kfoldPredict(cvSVMModel);
+confusionchart(data(:,3),string(labels))
+cvSVMMdlError = kfoldLoss(cvSVMModel); % error of crossvalidated model
 
+% Find the best model with Cross Validation
+L = kfoldLoss(cvSVMModel, "Mode", "individual");
+[minError, minIndex] = min(L);
+SVMModel = cvSVMModel.Trained{minIndex};
 save("model.mat", "SVMModel");
 
 % Extract characteristics
