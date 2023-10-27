@@ -36,8 +36,7 @@ desvSceneColor = single(desvSceneColor);
 meanScene(isnan(meanScene)) = 0;  %Nans to 0
 %______________________________
 
-
-%load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
+load("./Secuencias/scan3d-o-27Feb2014-093907.mat");
 %load("./Secuencias/scan3d-o-27Feb2014-093946.mat");
 %load("./Secuencias/scan3d-o-27Feb2014-094033.mat");
 %load("./Secuencias/scan3d-ri-27Feb2014-094457.mat");
@@ -48,7 +47,7 @@ meanScene(isnan(meanScene)) = 0;  %Nans to 0
 %load("./Secuencias/scan3d-fw-27Feb2014-094752.mat");
 %load("./Secuencias/scan3d-up-27Feb2014-094145.mat");
 %load("./Secuencias/scan3d-up-27Feb2014-094221.mat");
-load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
+%load("./Secuencias/scan3d-up-27Feb2014-094258.mat");
 
 numFrames = size(scan3d.img,4);
 
@@ -95,10 +94,9 @@ end
 
 % Centroid
 
-bbs = [];
+%bbs = [];
 
 for i=1 : numFrames
-
     % RGB to HSV
     HSVimage = rgb2hsv(RGBSegmented(:,:,:,i));
     maskSkin(:,:,i) = HSVimage(:,:,3)>0.6;
@@ -133,16 +131,16 @@ for i=1 : numFrames
     % We want the closest Centroid
     if valuesReg1<valuesReg2
         Centroid(:,i) = regions(idx(1)).Centroid;
-        bbs = [bbs; bb1];
+        %bbs = [bbs; bb1];
     else
         Centroid(:,i) = regions(idx(2)).Centroid;
-        bbs = [bbs; bb2];
+        %bbs = [bbs; bb2];
     end
 end
 
-fid = fopen('scan3d-up-27Feb2014-094258.bb','w');
-fprintf(fid,'[%d,%d,%d,%d], ',bbs');
-fclose(fid);
+%fid = fopen("./blobs/scan3d-o-27Feb2014-093907.mat", "w");
+%fprintf(fid, "[%d,%d,%d,%d], ", bbs');
+%fclose(fid);
 
 %===========================================================================
 
@@ -174,21 +172,23 @@ end
 %| - Clasification - |
 %=====================
 
-% CrossValidation
+data = readmatrix("data.csv", "OutputType", "string");
 
-load("data2.mat");
-load("trueLabels.mat");
-load("cellLabels.mat");
-c = cvpartition([1,1,1,2,2,2,3,3,3,4,4,4],'KFold',3);
-model = fitcknn(data2(:,1:2),trueLabels,'CVPartition',c);
+% Support Vector Machines Model
+c = cvpartition(data(:,3), "KFold", 3);
+SVMModel = fitcknn( ...
+    double(data(:,1:2)), data(:,3), ...
+    "CVPartition", c ...
+);
 
-% see how well the model works
-labels = kfoldPredict(model);
-confusionchart(cellLabels,labels)
-cvTrainError = kfoldLoss(model)
+% Find the best model with Cross Validation
+L = kfoldLoss(SVMModel, "Mode", "individual");
+[minError, minIndex] = min(L);
+SVMModel = SVMModel.Trained{minIndex};
 
+save("model.mat", "SVMModel");
 
-% Predict
+% Extract characteristics
 xmov = 0;
 ymov = 0;
 for i=2 : numFrames
@@ -197,26 +197,18 @@ for i=2 : numFrames
 end
 mov = [xmov, ymov];
 
-%select the best model out of the three we got from the crossvalidation
-bstModel = model.Trained{1};
-if(loss(model.Trained{2},model.Trained{2}.X,model.Trained{2}.Y) < loss(bstModel,bstModel.X,bstModel.Y)) 
-    bstModel = model.Trained{2};
-end
-if(loss(model.Trained{3},model.Trained{3}.X,model.Trained{3}.Y) < loss(bstModel,bstModel.X,bstModel.Y))
-    bstModel = model.Trained{3};
-end
-bstModelError = loss(bstModel,bstModel.X,bstModel.Y)
-%predict label
-label = predict(bstModel, mov);
+%data = [data; [mov, "o"]];
+%writematrix(data, "data.csv");
 
-save("model.mat", "bstModel");
+% Predict
+label = predict(SVMModel, mov);
 
 %===========================================================================
 
 % Display
 
 figure;
-for i=1 : numFrames %for each frame
+for i=1 : numFrames
     imagesc(scan3d.img(:,:,:,i)); %Original
     imagesc(DSegmented(:,:,i)); %Segmented
 
