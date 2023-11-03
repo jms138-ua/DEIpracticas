@@ -188,7 +188,7 @@ SVMModel = cvSVMModel.Trained{minIndex};
 save("model.mat", "SVMModel");
 
 % See model performance
-labels = predict(SVMModel,cvSVMModel.X);
+[labels,score] = resubPredict(SVMModel);
 cm = confusionchart(data(:,3),string(labels), ...
     "Title","Matriz de confusión","ColumnSummary","column-normalized", ...
     "RowSummary","row-normalized","Normalization","absolute");
